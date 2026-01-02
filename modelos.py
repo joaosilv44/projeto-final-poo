@@ -9,6 +9,7 @@ class Produto:
         return (
             f"{self.__nome} | Qauntidade:{self.__quantidade} | Preço: {self.__preco} | Val.:{self.__dataValidade}"
         )
+    
 
 class Estoque:
     def __init__(self):
