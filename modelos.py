@@ -1,3 +1,20 @@
+class Client: 
+    def __init__(self, name, cnpj, id_client, credit_limit, costumer_preferences, status_client, registration_date, address, phone, client_type, loyalty_points):
+        self.__name = name 
+        self.__cnpj = cnpj
+        self.__id_client = id_client
+        self.__credit_limit = credit_limit
+        self.__costumer_preferences = costumer_preferences
+        self.__status_client = status_client
+        self.__registration_date = registration_date
+        self.__address = address
+        self.__phone = phone
+        self.__client_type = client_type
+        self.__loyalty_points = loyalty_points
+
+    def get_name(self):
+        return self.__name
+    
 class Product:
     def __init__(self, nome, quantidade, preco, dataValidade):
         self.__name = nome
