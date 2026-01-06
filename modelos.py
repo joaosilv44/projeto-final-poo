@@ -21,14 +21,14 @@ class Client:
 # método de compra de pallets
     def buy(self, product, quantity_pallets, unit_value_pallet):
         
-        #v. bruto
+        #valor bruto
         gross_value = quantity_pallets * unit_value_pallet
        
        #desconto acerca do volume 
         discount_rate = self.volume_discount(quantity_pallets)
         discount_value = gross_value * discount_rate
         
-        #v. final c desconto add.
+        #valor final com o desconto.
         final_value = gross_value - discount_value
 
         self.__purchase_history.append({
@@ -61,7 +61,7 @@ class Client:
         else: 
             return 0
     
-#adiciona pontos acumulativos de acordo com o valor da conta; neste quesito é creditado pontos uando o cliente faz compras acima de 1 pallet de produtos.
+#adiciona pontos acumulativos de acordo com o valor da conta; neste quesito é creditado pontos quando o cliente faz compras acima de 1 pallet de produtos.
     def add_loyalty_points(self, buy_value):
         points = int(buy_value // 10)
         self.__loyalty_points += points
@@ -315,36 +315,55 @@ class Employee:
     
         
 class Product:
-    def __init__(self, nome, quantidade, preco, dataValidade):
-        self.__name = nome
-        self.__menge = quantidade
-        self.__price = preco
-        self.__validDate = dataValidade
+    def __init__(self, name,promotional_price, category, barr_code, valid_date, brand,quantity, price, dimensions):
+        self.__name = name
+        self.__promotional_price = promotional_price
+        self.__category = category
+        self.__barr_code = barr_code
+        self.__valid_date = valid_date
+        self.__brand = brand
+        self.__menge = quantity
+        self.__price = price
+        self.__dimensions = dimensions
 
-    def __str__(self):
+    def __str__(self): #Manipulação de como será impresso na tela o objeto Produto
         return (
             f"{self.__nome} | Qauntidade:{self.__quantidade} | Preço: {self.__preco} | Val.:{self.__dataValidade}"
         )
 
 class Estoque:
-    def __init__(self):
-        self.produtos = ["1", "2", "3"]
+    def __init__(self,status, responsible, capacity):
+        self.status = status
+        self.responsible = responsible
+        self.pallet_list = ["1", "2", "3"] #usei ppara testar a lista
+        self.historic_mov = ""
+        self.capacity = capacity
 
-    def adicionar_pallet(self, pallet):
-        self.produtos.append(pallet)
+    def add_pallet(self, pallet):
+        """
+        Método que adiciona um novo pallet na lista de pallet do estoque que estamos trabalhando no momento.
+        Utiliza o método append para adicionar um objeto 'pallet' em 'pallet_list'.
+        """
+        self.pallet_list.append(pallet)
         return "Pallet cadastrado!"
     
-    def search_product_name(self, id):
-        for p in self.products:
+    def search_product_id(self, id):
+        """ 
+        Método de busca, procura por objetos que existam dentro de pallet_list de acordo com seu id.
+        """
+        for p in self.pallet_list:
             if id == p.id:
                 return f"{p}"
             else:
                 return "Pallet não encontrado!"
             
-    def remover_pallet(self, pallet):
-        for p in self.produtos:
+    def delete_pallet(self, pallet):
+        """ 
+        Remove da lista objetos pallet que correspondem ao pallet passado como atributo. Usa o método remove.
+        """
+        for p in self.pallet_list:
             if p == pallet:
-                self.produtos.remove(p)
+                self.pallet_list.remove(p)
                 return "Pallet removido!"
             
 
