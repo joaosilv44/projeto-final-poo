@@ -1,5 +1,142 @@
 from datetime import datetime
 
+# DATA DA ATUALIZAÇÃO: 07.01.2026 as 21:00 da noite
+class AbstractEmployee(ABC): 
+    """
+    A classe abstrata Employee é tida como base comum para todo tipo de funcionário.
+    Logo, garante todas as regras de funcionamento, estrutura e comportamento. Onde, funciona sem a necessidade de instâncias diretas. 
+    """
+    
+    @abstractmethod
+    def register_entry(self):
+        pass
+    
+    """
+    Regra de registro da saída do funcionário
+    """
+    @abstractmethod
+    
+    def register_exit(self):
+        pass
+    
+    """
+    Regra do cálculo matemático das horas extras do funcionário, é levada em conta a atual jornada trabalhista de oito horas (8).
+    """
+    @abstractmethod
+    def calculate_overtime(self, day_type="Normal"):
+        pass 
+    
+    @abstractmethod
+    def request_vacation(self):
+        pass
+    
+    @abstractmethod
+    def request_raise(self,percentage):
+        pass
+    
+    @abstractmethod
+    def employee_stattus(self):
+        pass
+    
+class ClockMixin:
+    """
+    O Mixin acima encapsula o controle de ponto, onde permite o reuso em diferentes tipos de funcionários.
+    O mesmo não é acoplado ao modelo final da classe.
+    """
+    
+    def register_entry(self):
+        if self.__entry_time is not None:
+            return "Sua entrada já foi registrada..."
+
+        self.__entry_time = datetime.now()
+        return "A entrada foi regiistrada com sucesso!."
+    
+    
+    def register_exit(self):
+        if not self.__entry_time:
+            return "A entrada não foi registrada"
+        
+        exit_time = datetime.now()
+        worked_hours = (exit_time - self.__entry_time).seconds / 3600
+        
+        self.__hours_worked += worked_hours
+        
+        if worked_hours > 8:
+            self.__overtime += worked_hours - 8
+            
+        self.__entry_time = None
+        return "A Saída foi registrada"
+    
+    
+#! classe abstrata de Client -> serve de base para o desenvolvimento da mesma.
+class AbstractClient(ABC):
+    
+    @abstractmethod
+    def buy(self, product, quantity_pallets, unit_value_pallet):
+        pass
+
+    @abstractmethod
+    def client_category(self):
+        pass
+    
+    @abstractmethod
+    def summary_client(self):
+        pass
+    
+    @abstractmethod
+    def volume_discount(self, quantity_pallets):
+        pass
+
+    @abstractmethod
+    def add_loyalty_points(self, buy_value):
+        pass
+    
+    @abstractmethod
+    def claim_points(self):
+        pass
+    
+    @abstractmethod
+    def check_promotion(self, buy_value):
+        pass
+    
+    @abstractmethod
+    def rate_service(self, stars):
+        pass
+    
+    @abstractmethod 
+    def client_status(self):
+        pass
+
+#!interface class client
+class LoyaltySistem(ABC):
+    
+    @abstractmethod
+    def claim_points(self):
+        pass
+    
+    @abstractmethod
+    def add_loyalty_points(self, buy_value):
+        pass
+    
+#! mixin class client
+class ReviewMixin:
+    def rate_service(self, stars):
+        
+        descriptions = {
+            5: "Atendimento Excelente",
+            4: "Atendimento Bom",
+            3: "Bem Razoável",
+            2: "Atendimento Ruim",
+            1: "Péssimo"
+        }
+        
+        if stars not in descriptions:
+            return "Avaliação Inválida, ultilize a escala de 1 a 5 para a avaliação do atendimento."
+        
+        self.__reviews.append(stars)
+        return f"Obrigado, a sua avaliação foi: {stars} estrelas ({descriptions[stars]})"
+        
+
 #  DATA DA ATUALIZAÇÃO: 02.01.2026 as 22:30 da noite
 class Client: 
     def __init__(self, name, cnpj, id_client, credit_limit, costumer_preferences, status_client, registration_date, address, phone, client_type, loyalty_points=0):
