@@ -449,7 +449,91 @@ class Employee:
             "despacho": "O pedido se encontra na análise do Gerente",
             "detalhes": request_raise
         }
+
+# DATA DA ATUALIZAÇÃO: 08.01.2026 as 14:33 da tarde
+class Seller(Employee): 
+    def __init__(self, name, shift, cpf, salary,id_employee,departament,status_employee,admission_date,contract_type,position,overtime, hours_worked, meta_monthly, commision_percentual):
+        
+        super().__init__(name, commision_percentual,shift, cpf, salary, position, id_employee, departament, status_employee, admission_date, contract_type, position, meta_monthly, overtime, hours_worked)
+        
+        self.__costumers_served = []
+        self.__pallets_sold = 0
+        self.__quantity_invites = []
+        self.__comission_percentual = commision_percentual
+        self.__sales_made = []
+        
+    @property
+    def meta_monthly(self):
+        return self.__meta_monthly
     
+    @meta_monthly.setter
+    def meta_monthly(self, value):
+        if value <= 0:
+            raise ValueError("A meta deve ser maior do que zero")
+        self.__meta_monthly = value
+        
+    @property
+    def pallets_sold(self):
+        return self.__pallets_sold
+        
+    
+    def attend_costumer(self, costumer):
+        self.__costumers_served.appen(costumer)
+        
+        
+    def make_sale(self, costumer, product, quantity):
+        
+        sale = {
+            "costumer":costumer,
+            "product":product,
+            "quantity":quantity
+        }
+        
+        self.__sales_made.append(sale)
+        
+    def follow_customer(self, client):
+        return f"Acompanhamento realizado com o cliente {client}"
+    
+    def apply_customer_benefi(self, client):
+        return f"O benefício de fidelidade foi aplicado ao cliente {client}"
+    
+    def negotiate_price(self, discount):
+        if discount < 0 or discount > 0.15:
+            raise ValueError("O desconto deve encontrar-se entre 0% e 15%")
+        return f"Desconto de {discount * 100}% aprovado!"
+    
+    def verify_meta_monthly(self):
+        return self._Employee__meta_monthly <= self.__pallets_sold
+    
+        
+    def calculate_comissions(self):
+        return self.__pallets_sold * self.__comission_percentual
+    
+    def register_service(self, client):
+        self.__quantity_invites.append(client)
+        
+    def request_evaluation(self, note):
+        if note < 1 or note > 5:
+            raise ValueError(" A nota se encontra em uma escala de 1 a 5.")
+        
+    def respond_to_complaint(self, client):
+        return f"Reclamação do cliente {client} foi respondida"
+    
+    def sumary_sales(self):
+        return {
+        "clientes_atendidos": len(self.__customers_served),
+        "vendas_realizadas": len(self.__sales_made),
+        "paletes_vendidos": self.__pallets_sold,
+        "comissao": self.calculate_comissions()
+    }
+
+#!ver isso ainda
+    def see_costumer_credit(self, client):
+        if client
+        
+        
+
+
         
 class Product:
     def __init__(self, name,promotional_price, category, barr_code, valid_date, brand,quantity, price, dimensions):
@@ -502,5 +586,5 @@ class Estoque:
             if p == pallet:
                 self.pallet_list.remove(p)
                 return "Pallet removido!"
-            
+
 
