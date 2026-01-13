@@ -1,4 +1,7 @@
 from datetime import datetime
+from abc import ABC, abstractmethod
+from enum import Enum
+from typing import Tuple, Optional
 
 # DATA DA ATUALIZAÇÃO: 07.01.2026 as 21:00 da noite
 class AbstractEmployee(ABC): 
