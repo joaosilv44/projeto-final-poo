@@ -530,27 +530,170 @@ class Seller(Employee):
 #!ver isso ainda
     def see_costumer_credit(self, client):
         if client
-        
-        
 
 
+#! ATUALIZADO DIA 13.01 AS 17:45 DA TARDE.
         
-class Product:
-    def __init__(self, name,promotional_price, category, barr_code, valid_date, brand,quantity, price, dimensions):
-        self.__name = name
-        self.__promotional_price = promotional_price
-        self.__category = category
-        self.__barr_code = barr_code
-        self.__valid_date = valid_date
-        self.__brand = brand
-        self.__menge = quantity
-        self.__price = price
-        self.__dimensions = dimensions
-
-    def __str__(self): #Manipulação de como será impresso na tela o objeto Produto
-        return (
-            f"{self.__nome} | Qauntidade:{self.__quantidade} | Preço: {self.__preco} | Val.:{self.__dataValidade}"
+#! interface 
+class Promocional(ABC):  
+    
+    @abstractmethod
+    def add_promotion(self, new_price: float) -> None:
+        pass
+    
+    @abstractmethod
+    def remove_promotion(self):
+        pass
+    
+    @abstractmethod
+    def has_promotion(self)-> bool:
+        pass
+    
+    @abstractmethod
+    def current_price(self) -> float:
+        pass
+    
+class ProductStatus(Enum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    BLOCKED = "blocked"
+    DISCONTINUED = "discontinued"
+    
+#! classe abstrata PRIDUTO
+class Product(ABC, Promocional):
+    def __init__(self, name, category,unit_measure,brand, wheight_per_unit,pallets_quantity,barcode, total_units,cost_price, quantity, supplier, min_stock,origin,units_per_pallet, min_pallets, unit_price, expiration_date = date , dimensions= tuple[float, float, float], status: ProductStatus = ProductStatus.ACTIVE):
+        self._name = name 
+        self._category = category
+        self._brand = brand
+        self._barcode = barcode
+        self._supplier = supplier
+        self._quantity = quantity
+        self._origin = origin
+        self._expiration_date = expiration_date
+        self._dimensions = dimensions
+        self._min_stock = min_stock
+        self._total_units = total_units
+        self._wheight_per_unit = wheight_per_unit
+        self._status = status
+        
+        self._units_per_pallet = units_per_pallet 
+        self._min_pallets = min_pallets
+        self._pallets_quantity = pallets_quantity
+        
+        self._cost_price = cost_price
+        self._unit_measure = unit_measure
+        self._unit_price = unit_price
+        
+        self._promotion_price: Optional[float] = None
+        
+    def total_units_stock(self) -> int:
+        total = self._pallets_quantity * self._units_per_pallet
+        print(f"Informação: total de unidades no estoque: {total}")
+        return total
+    
+    def total_stock_value(self) -> float:
+        total = self._promotion_price or self.current_price()
+        print(f"Informação: Valor total do estoque: {total:.2f}")
+        return total
+    
+    def total_wheight(self) -> float:
+        total = self.total_units_stock() * self._wheight_per_unit
+        print(f"Informação: Peso total do estoque: {total:. 2f} {self._unit_measure}")
+        return total
+    
+    def add_pallets(self, pallets: int) -> None:
+        
+        if self._status != ProductStatus.ACTIVE:
+            raise PermissionError(
+                "Mensagem de Erro: O produto não está ativo."
+            )
+        if pallets <= 0:
+            raise ValueError(
+                "Mensagem de Erro: A quantidade de pallets deve ser positiva."
+            )
+        self._pallets_quantity += pallets
+        print(
+            f"Estoque em: +{pallets} pallets adicionados | "
+            f"Pallets Atuais: {self._pallets_quantity}"
         )
+        
+    def remove_pallets(self, pallets: int) -> None:
+        
+        if pallets <= 0:
+            raise ValueError(
+                "Mensagem de Erro: Quantidade Inválida"
+            )
+        if pallets > self._pallets_quantity:
+            raise ValueError(
+                "Mensagem de Erro: Estoque insuficiente de pallets para esta operação."
+            )
+        if self.is_expired():
+            raise PermissionError(
+                 "Mensagem de Erro: O produto está vencido."
+            )
+        self._pallets_quantity -= pallets
+        print(
+            f"Saída Registrada: {pallets} pallets removidos!"
+            f"Pallets Restantes: {self._pallets_quantity}"
+        )
+        
+    def needs_restock(self) -> bool:
+        needs = self._pallets_quantity <= self._min_pallets
+        print(f"Reposição Necessária: {'SIM' if needs else 'NÃO'}")
+        return needs
+    
+    def is_expired(self) -> bool:
+        
+        expired = self._expiration_date < date.today()
+        print(f"Status de Validade: {'EXPIRADO' if expired else 'VÁLIDO'}")
+        return expired
+
+    def block(self) -> None:
+    
+        self._status = ProductStatus.BLOCKED
+        print("O produto se encontra bloqueado")
+        
+    def activate(self) -> None:
+        
+        self._status = ProductStatus.ACTIVE
+        print("O produto se enconta ativo")
+        
+    def discontinued(self) -> None:
+        
+        self._status = ProductStatus.DISCONTINUED
+        print("O produto está descontinuado..")
+        
+    def is_active(self) -> bool:
+        return self._status == ProductStatus.ACTIVE
+
+    def profit_per_unit(self) -> float:
+        
+        profit = self._unit_price - self._cost_price
+        print(f"Informação do Sistema: Lucro por unidade: {profit:.2f}")
+        return profit
+    
+    def profit_per_pallet(self) -> float:
+        
+        profit = self.profit_per_unit() * self._units_per_pallet
+        print(f"Informação do Sistema: Lucro por pallet: {profit:.2f}")
+        return profit
+    
+    def add_promotion(self, new_price):
+        if new_price <= self._cost_price:
+            raise ValueError("Informação do Sistema: O preço promocional está abaixo do custo")
+        self._promotion_price = new_price
+        print(f"Promoção Aplicada: Novo Preço: R$ {new_price:.2f}")
+    
+    def remove_promotion(self) -> None:
+        self._promotion_price = None
+        print("Informação do Sistema: A promoção foi removida.")
+         
+    def has_promotion(self) -> bool:
+        return self._promotion_price is not None
+        
+    def current_price(self) -> float:
+        return self._promotion_price if self.has_promotion() else self._unit_price
+        
 
 class Estoque:
     def __init__(self,status, responsible, capacity):
