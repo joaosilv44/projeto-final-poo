@@ -523,6 +523,11 @@ class Seller(Employee):
         return f"Reclamação do cliente {client} foi respondida"
     
     def sumary_sales(self):
+        """
+        Função: Retornar um sumário de vendas com o número de clientes atendidos,
+                número de vendas realizadas, pallets vendidos e o calcular a comissão
+                acerca das ações do funcionário.
+        """
         return {
         "clientes_atendidos": len(self.__customers_served),
         "vendas_realizadas": len(self.__sales_made),
@@ -536,7 +541,146 @@ class Seller(Employee):
 
 
 #! ATUALIZADO DIA 13.01 AS 17:45 DA TARDE.
+
+#* interface --> classe abstrata --> mixin --> classe funcional. 
+class PalletInterface(ABC):
+    """
+    Função: Definir tudo aquilo que o pallet deve saber fazer.
+    """
+    
+    @abstractmethod
+    def add_products(self, quantity: int) -> None:
+        pass
+    
+    @abstractmethod
+    def remove_products(self, quantity: int) -> None:
+        pass
+    
+    @abstractmethod
+    def calculate_wheight(self) -> float:
+        pass
+    
+    @abstractmethod
+    def is_full(self) -> bool:
+        pass
+    
+    @abstractmethod
+    def is_empty(self)-> bool:
+        pass
+
+class AbstractPallet(PalletInterface):
+    """"
+    Lógica base para a classe Pallet
+    """
+    def __init__(self, id_pallet, product,max_capacity, max_wheight):
+        self._id_pallet = id_pallet
+        self._product = product
+        self._max_capacity = max_capacity
+        self._max_wheight = max_wheight
+        self._current_weight = 0.0
+        self._quantity_products =  0.0
+        self._input_date = date.today()
+       
+class StatusMixin:
+    """
+    Função: controlar o status do pallet.
+    """
+    
+    def block(self):
+        self._status = "Bloqueado"
         
+    def activate(self):
+        self._status = "Ativado"
+        
+    def is_active(self)-> bool:
+        return self._status == "Ativo"
+        
+class Pallet(StatusMixin, AbstractPallet):
+    def __init__(self, id_pallet, product, max_capacity, max_wheight, location_in_stock):
+        super().__init__(id_pallet, product, max_capacity, max_wheight)
+        self._location_in_stock = location_in_stock
+        self._status = "Ativo"
+    
+    @property
+    def quantity_products(self) -> int:
+        return self._quantity_products
+    
+    @quantity_products.setter
+    def quantity_products(self, value) -> int:
+        if value < 0:
+            raise ValueError("Mensagem do Sistema: A quantidade inválida")
+        self._quantity_products = value
+        
+    @property
+    def location_in_stock(self) -> str:
+        return self._location_in_stock
+    
+    @location_in_stock.setter
+    def location_in_stock(self, value: str) -> None:
+        if not value or not isinstance(value, str):
+            raise ValueError("Mensagem do Sistema: Localização Inválida no Sistema")
+        self.location_in_stock = value
+    
+    @property
+    def status(self) -> str:
+        return self._status
+    
+    @status.setter
+    def status(self, value: str) -> None:
+        allowed_status = {"Ativo, Bloqueado, Shipped"}
+        if value not in allowed_status:
+            raise ValueError(f"Mensagem do Sistema: Status Inválido {value}")
+        self._status = value
+      
+    @property
+    def current_wheight(self) -> float:
+        return self._current_weight
+    
+    @current_wheight.setter
+    def current_wheight(self, value: float) -> None:
+        if value < 0:
+            raise ValueError("Mensagem do Sistema: O atual peso não pode ser negativo")
+        if value > self._max_wheight:
+            raise ValueError("Mensagem do Sistema: O peso atual excede o limite do pallet")
+        self._current_weight = value 
+         
+    def add_products(self, quantity: int)-> None:
+       if quantity <= 0:
+           raise ValueError("Mensagem do Sistema: A quantidade inválida")
+       
+       if self._quantity_products + quantity > self._max_capacity:
+           raise ValueError("Mensagem do Sistema: A capacidade mínima excedida")
+       
+       self._quantity_products += quantity
+       self._current_weight = self.calculate_wheight()
+       
+    def remove_products(self, quantity: int)-> None:
+       if quantity <= 0:
+           raise ValueError("Mensagem do Sistema: A quantidade inválida")
+       
+       if quantity > self._quantity_products:
+           raise ValueError("Mensagem do Sistema: Quantidade Insuficiente no Pallet")
+       
+       self._quantity_products -= quantity
+       self._current_weight = self.calculate_wheight()
+       
+    def calculate_wheight(self) -> float:
+        return self._quantity_products * self._product._wheight_per_unit
+    
+    def is_full(self) -> bool:
+        return self._quantity_products == self._max_capacity
+    
+    def is_empty(self) -> bool:
+        return self._quantity_products == 0
+    
+    def str(self) -> str:
+        return(
+            f"Pallet: {self._id_pallet}"
+            f"Produto: {self._product}"
+            f"Quantidade: {self._quantity_products}"
+            f"Peso do Pallet: {self._current_weight:.2f} quilos"
+            f"Status do Pallet: {self._status}"
+        )        
 #! interface 
 class Promocional(ABC):  
     
