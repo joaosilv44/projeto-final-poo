@@ -877,4 +877,299 @@ class Estoque:
                 self.pallet_list.remove(p)
                 return "Pallet removido!"
 
+class StockItem:
+    def __init__(self, product: Product, pallets:int):
+        self.product = product
+        self.pallets = pallets
+    
+    def total_units(self) -> int:
+        return self.pallets * self.product.units_per_pallet
+    
+    def total_value(self):
+        return self.total_units() * self.product.current_price()
+
+
+class StockInterface(ABC):
+    
+    @abstractmethod
+    def add_pallet(self, product: Product, quantity: int):
+        pass
+    
+    @abstractmethod
+    def del_pallet(self, product: Product, quantity: int):
+        pass
+    
+    @abstractmethod
+    def view_status(self):
+        pass
+    
+    @abstractmethod
+    def total_stock_value(self):
+        pass
+    
+    @abstractmethod
+    def list_pallets(self):
+        pass
+    
+    
+class BaseStock(StockInterface):
+    def __init__(self, total_capacity: int):
+        self._total_capacity = total_capacity
+        self._pallet_list = list[StockItem] = []
+
+class MovementMixin:
+    
+    def register_movement(self, description: str):
+        data = datetime.now().strftime("%d/%m/%Y %H: %M")
+        self._movement_history.append(f"[{data}] {description}")
+        
+        
+class Stock(BaseStock, MovementMixin):
+    def __init__(self, total_capacity: int, responsible: str, name: str):
+        super().__init__(total_capacity)
+        self._responsible = responsible
+        self._movement_history = []
+        self._status = "Vazio"
+        self._name = name 
+        
+    @property
+    def responsible(self):
+        return self._responsible
+    
+    @responsible.setter
+    def responsible(self, name: str):
+        self._responsible = name 
+    
+    def add_pallet(self, product: Product, pallets: int):
+        
+        if not product.is_active():
+            raise ValueError("Informação do Sistema: O produto está inativo")
+        
+        if product.is_expired():
+            raise PermissionError("Informação do Sistema: O produto está vencido")
+        
+        for item in self._pallet_list:
+            if item.product.barcode == product.barcode:
+                item.pallets += pallets
+            self.register_movement(
+                f"Informação do Sistema"
+                f"Entrada de {pallets} pallets do produto {product.name}"
+            )
+            self.update_status()
+            return 
+        
+        self._pallet_list.append(StockItem(product,pallets))   
+        self.register_movement(
+           f"Informação do Sistema"
+           f"Entrada de {pallets} pallets do produto {product.name}"
+        )   
+        self.update_status()
+          
+    def del_pallet(self,product: Product, pallets: int):
+        
+        for item in self._pallet_list:
+            if item.product.barcode == product.barcode:
+                if pallets > item.pallets:
+                    raise ValueError("Informação do Sistema: Estoque insuficiente")
+                
+                item.pallets -= pallets
+                self.register_movement(
+                    f"Informação do Sistema: Removidos {pallets} pallets do produto {product.name}"
+                )
+                if item.pallets == 0:
+                    self._pallet_list.remove(item)
+                
+                self._update_status()
+                return
+    
+    #pallet listaddo no atacado
+    def list_pallets(self) -> list[StockItem]:
+        return self._pallet_list.copy()
+    
+    
+    def search_product_id(self, product_id):
+        return next(
+            (p for p in self._pallet_list if p ["Produto"].id == product_id),
+            None
+        )
+    
+    def total_stock_value(self):
+        return sum(item.total_value() for item in self._pallet_list)
+        
+        
+    #built ins
+    def view_status(self):
+        return self._status
+    
+    def update_status(self):
+        total_pallets = sum(item.pallets for item in self._pallet_list)
+    
+        if total_pallets == 0:
+            self._status = "VAZIO"
+        
+        elif total_pallets < self._total_capacity * 0.3:
+            self._status = "BAIXO"
+            
+        else:
+            self._status = "CHEIO"
+              
+    def __str__(self):
+        return (
+            f"-- Informações Gerais do Estoque --\n"
+            f"Estoque: {self._name}\n"
+            f"Responsável(a): {self.responsible}\n"
+            f"Status: {self._status}\n"
+            f"Total Pallets: {sum(i.pallets for i in self._pallet_list)}\n"
+            f"Valor total do estoque: {self.total_stock_value():.2f}"
+        )
+            
+#! interface da C. COMPRA
+class InterfacePurchase(ABC):
+    
+    @abstractmethod
+    def calculate_total(self):
+        pass
+    
+    @abstractmethod
+    def finalize_purchase(self):
+        pass
+    
+    @abstractmethod
+    def cancel_purchase(self):
+        pass
+    
+#! abstrata da C. COMPRA
+class AbstractPurchase(InterfacePurchase, ABC):
+    def __init__(self, client, seller, product, quantity_pallets):
+        self._client = client
+        self._seller = seller
+        self._product = product
+        self._quantity_pallets = quantity_pallets
+        self._date = datetime.now()
+        self._status = "PENDING"
+        self._total_value = 0.0
+        
+#! mixin da C. COMPRA
+class MixinPurchase:
+     
+    def register_log(self, message):
+        if not hasattr(self, "_logs"):
+            self._logs = []
+            self._logs.append(message)
+
+
+#!classe COMPRA
+class Purchase(AbstractPurchase, MixinPurchase):
+    def __init__(self, client, seller, product, quantity_pallets):
+        super().__init__(client, seller, product, quantity_pallets)
+        self._logs = []
+        
+    @property
+    def status(self):
+        return self._status
+
+    @property
+    def total_value(self):
+        return self._total_value
+    
+    def calculate_total(self):
+        
+        unit_price = self._product.current_price()
+        gross_value = unit_price * self._quantity_pallets
+        
+        discount_rate = self._client.volume_discount(self._quantity_pallets)
+        discount_value = gross_value * discount_rate
+        
+        final_value = gross_value - discount_value
+        self._total_value = final_value
+        
+        self.register_log(
+            f"Valor Calculado: Bruto {gross_value:.2f}"
+            f"Valor com desconto: R$ {discount_rate * 100: .0f}%" 
+            f"Valor final: {final_value: .3f}"
+        )
+        return final_value
+    
+    
+    def finalize_purchase(self):
+        if self.status != "PENDING":
+            raise RuntimeError("A compra já foi processada")
+        
+    #como a compra ja foi atualizada; o estoque atualiza:
+        self._product.remove_pallets(self._quantity_pallets)
+        
+        #o cliente faz a compra
+        self._client.buy(
+            self._product,
+            self._quantity_pallets,
+            self._product.current_price()
+        )
+        #o seller registra a vensa:
+        self._seller.make_sale(
+            self._client,
+            self._product,
+            self._quantity_pallets
+        )
+        
+        
+        self._seller._Seller__pallets_sold += self._quantity_pallets
+        
+        self.status = "COMPLETED"
+        
+        self.register_log("Compra feita com sucesso!")
+        return self.total_value
+    
+    def cancel_purchase(self):
+        if self.status == "COMPLETED":
+            raise RuntimeError("A compra que já foi concluida não pode ser cancelada!!")
+        
+        self.status = "CAMCELED"
+        self.register_log("Compra Cancelada")
+        
+    def __str__(self):
+        return (
+            f"Compra do Cliente: {self._client.name}\n"
+            f"Produto: {self._product}\n"
+            f"Quantidade de Pallets: {self._quantity_pallets}\n"
+            f"Status: {self.status}\n"
+            f"Valor: {self._total_value}\n"
+        )
+            
+        
+#falta adicionar os métodos:
+
+1. Validaçãp de estoque 
+2. ver o limite de crédito do cliente
+3. simular sem efetivar venda
+4. aplicar promoções 
+5. reservar pallets
+6. calcular impostos
+7. definir método de pagamento
+8. emitir nota fiscal
+9.  
+
+    
+    
+        
+        
+    
+
+        
+    
+    
+    
+    
+    
+        
+        
+        
+    
+    
+    
+        
+
+        
+                
+        
+
 
