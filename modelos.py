@@ -1052,17 +1052,19 @@ class AbstractPurchase(InterfacePurchase, ABC):
 #! mixin da C. COMPRA
 class MixinPurchase:
      
-    def register_log(self, message):
+    def register_log(self, message: str):
         if not hasattr(self, "_logs"):
             self._logs = []
-            self._logs.append(message)
-
+            self._logs.append(
+                f"[{datetime.now().strftime('%d/%m/%Y %H:%M')}] {message}"
+            )
 
 #!classe COMPRA
 class Purchase(AbstractPurchase, MixinPurchase):
     def __init__(self, client, seller, product, quantity_pallets):
         super().__init__(client, seller, product, quantity_pallets)
         self._logs = []
+        self._payment_method = None
         
     @property
     def status(self):
@@ -1072,28 +1074,95 @@ class Purchase(AbstractPurchase, MixinPurchase):
     def total_value(self):
         return self._total_value
     
+    def _validate_stock(self):
+        avaiLable = self._product.avaible_pallets()
+        if self._quantity_pallets > avaiLable:
+            raise ValueError(
+                f"Estoque Insuficiente"
+                f"Disponivel: {avaiLable} pallets ao todo"
+            )
+            
+    def _validate_credit_limit(self):
+        total = self.calculate_total()
+        if total > self._client.credit_limit():
+            raise PermissionError(
+                "Limite de crédito do cliente excedido!"
+            )  
+            
+    def _apply_promotion(self,price:float ) -> float:
+        if self._product.has_promotion():
+            return self._product.promotion_price()
+        return price
+    
+           
+    def calculate_taxes(self, value: float) -> float:
+        tax_rate = 0.12
+        return value * tax_rate
+    
     def calculate_total(self):
         
-        unit_price = self._product.current_price()
+        unit_price = self._apply_promotion(
+            self._product.current_price()
+        )
         gross_value = unit_price * self._quantity_pallets
         
         discount_rate = self._client.volume_discount(self._quantity_pallets)
         discount_value = gross_value * discount_rate
+    
+        subtotal = gross_value - discount_value
+        taxes = self.calculate_taxes(subtotal)    
+        final_value = subtotal + taxes
         
-        final_value = gross_value - discount_value
         self._total_value = final_value
         
         self.register_log(
-            f"Valor Calculado: Bruto {gross_value:.2f}"
-            f"Valor com desconto: R$ {discount_rate * 100: .0f}%" 
+            f"Valor Bruto Calculado: {gross_value:.2f}"
+            f"Valor com desconto: R$ {discount_rate * 100: .0f}%"
+            f"Impostos: {taxes:.2f}" 
             f"Valor final: {final_value: .3f}"
         )
         return final_value
     
+
+    def simulate_purchase(self):
+        self._validate_stock()
+        
+        unit_price = self._apply_promotion(
+            self._product.current_price()
+        )
+        gross = unit_price * self._quantity_pallets
+        discount = gross * self._client.volume_discount(self._quantity_pallets)
+        subtotal = gross - discount
+        taxes = self.calculate_taxes(subtotal)
+      
+        return {
+            "valor bruto": gross,
+            "desconto": discount * 100,
+            "valor_final": subtotal + taxes
+        }
+       
+    def reserve_pallets(self):
+        self._validate_stock()
+        self._product.reserve_pallets(self._quantity_pallets)
+        self.register_log("Pallets Reservados")
+        
+    def set_payment_method(self, method: str):
+        allowed = ["PIX", "CREDIT", "DEBIT", "BOLETO"]
+        if method not in allowed:
+            raise ValueError("Método de pagamento inválido")
+        
+        self._payment_method = method
+        self.register_log(f"Método de pagamento escolhido pelo cliente: {method}")
     
+        
     def finalize_purchase(self):
         if self.status != "PENDING":
             raise RuntimeError("A compra já foi processada")
+        
+        
+        self._validate_stock()
+        self.calculate_total()
+        self._validate_credit_limit()
         
     #como a compra ja foi atualizada; o estoque atualiza:
         self._product.remove_pallets(self._quantity_pallets)
@@ -1112,20 +1181,36 @@ class Purchase(AbstractPurchase, MixinPurchase):
         )
         
         
-        self._seller._Seller__pallets_sold += self._quantity_pallets
+        self._seller.add_pallets_sold(self._quantity_pallets)
         
-        self.status = "COMPLETED"
-        
+        self._status = "COMPLETED"
         self.register_log("Compra feita com sucesso!")
+        
         return self.total_value
     
     def cancel_purchase(self):
         if self.status == "COMPLETED":
-            raise RuntimeError("A compra que já foi concluida não pode ser cancelada!!")
+            raise RuntimeError("Compra não finalizada.")
         
-        self.status = "CAMCELED"
+        self.status = "CANCELED"
         self.register_log("Compra Cancelada")
         
+    def issue_invoice(self):
+        if self.status != "COMPLETED":
+         raise RuntimeError("Compra não finalizada")
+
+        invoice = {
+        "cliente": self._client.name,
+        "produto": self._product.name,
+        "quantidade_pallets": self._quantity_pallets,
+        "valor": self._total_value,
+        "pagamento": self._payment_method,
+        "data": self._date.strftime("%d/%m/%Y")
+    }
+
+        self.register_log("Nota fiscal emitida")
+        return invoice
+
     def __str__(self):
         return (
             f"Compra do Cliente: {self._client.name}\n"
@@ -1136,22 +1221,464 @@ class Purchase(AbstractPurchase, MixinPurchase):
         )
             
         
-#falta adicionar os métodos:
 
-1. Validaçãp de estoque 
-2. ver o limite de crédito do cliente
-3. simular sem efetivar venda
-4. aplicar promoções 
-5. reservar pallets
-6. calcular impostos
-7. definir método de pagamento
-8. emitir nota fiscal
-9.  
+        
+    
 
+        
+    
+    
+    
     
     
         
         
+        
+    
+    
+    
+        
+
+        
+                
+        #! interface da C. COMPRA
+class InterfacePurchase(ABC):
+    
+    @abstractmethod
+    def calculate_total(self):
+        pass
+    
+    @abstractmethod
+    def finalize_purchase(self):
+        pass
+    
+    @abstractmethod
+    def cancel_purchase(self):
+        pass
+    
+#! abstrata da C. COMPRA
+class AbstractPurchase(InterfacePurchase, ABC):
+    def __init__(self, client, seller, product, quantity_pallets):
+        self._client = client
+        self._seller = seller
+        self._product = product
+        self._quantity_pallets = quantity_pallets
+        self._date = datetime.now()
+        self._status = "PENDING"
+        self._total_value = 0.0
+        
+#! mixin da C. COMPRA
+class MixinPurchase:
+     
+    def register_log(self, message: str):
+        if not hasattr(self, "_logs"):
+            self._logs = []
+            self._logs.append(
+                f"[{datetime.now().strftime('%d/%m/%Y %H:%M')}] {message}"
+            )
+
+#!classe COMPRA
+class Purchase(AbstractPurchase, MixinPurchase):
+    def __init__(self, client, seller, product, quantity_pallets):
+        super().__init__(client, seller, product, quantity_pallets)
+        self._logs = []
+        self._payment_method = None
+        
+    @property
+    def status(self):
+        return self._status
+
+    @property
+    def total_value(self):
+        return self._total_value
+    
+    def _validate_stock(self):
+        avaiLable = self._product.avaible_pallets()
+        if self._quantity_pallets > avaiLable:
+            raise ValueError(
+                f"Estoque Insuficiente"
+                f"Disponivel: {avaiLable} pallets ao todo"
+            )
+            
+    def _validate_credit_limit(self):
+        total = self.calculate_total()
+        if total > self._client.credit_limit():
+            raise PermissionError(
+                "Limite de crédito do cliente excedido!"
+            )  
+            
+    def _apply_promotion(self,price:float ) -> float:
+        if self._product.has_promotion():
+            return self._product.promotion_price()
+        return price
+    
+           
+    def calculate_taxes(self, value: float) -> float:
+        tax_rate = 0.12
+        return value * tax_rate
+    
+    def calculate_total(self):
+        
+        unit_price = self._apply_promotion(
+            self._product.current_price()
+        )
+        gross_value = unit_price * self._quantity_pallets
+        
+        discount_rate = self._client.volume_discount(self._quantity_pallets)
+        discount_value = gross_value * discount_rate
+    
+        subtotal = gross_value - discount_value
+        taxes = self.calculate_taxes(subtotal)    
+        final_value = subtotal + taxes
+        
+        self._total_value = final_value
+        
+        self.register_log(
+            f"Valor Bruto Calculado: {gross_value:.2f}"
+            f"Valor com desconto: R$ {discount_rate * 100: .0f}%"
+            f"Impostos: {taxes:.2f}" 
+            f"Valor final: {final_value: .3f}"
+        )
+        return final_value
+    
+
+    def simulate_purchase(self):
+        self._validate_stock()
+        
+        unit_price = self._apply_promotion(
+            self._product.current_price()
+        )
+        gross = unit_price * self._quantity_pallets
+        discount = gross * self._client.volume_discount(self._quantity_pallets)
+        subtotal = gross - discount
+        taxes = self.calculate_taxes(subtotal)
+      
+        return {
+            "valor bruto": gross,
+            "desconto": discount * 100,
+            "valor_final": subtotal + taxes
+        }
+       
+    def reserve_pallets(self):
+        self._validate_stock()
+        self._product.reserve_pallets(self._quantity_pallets)
+        self.register_log("Pallets Reservados")
+        
+    def set_payment_method(self, method: str):
+        allowed = ["PIX", "CREDIT", "DEBIT", "BOLETO"]
+        if method not in allowed:
+            raise ValueError("Método de pagamento inválido")
+        
+        self._payment_method = method
+        self.register_log(f"Método de pagamento escolhido pelo cliente: {method}")
+    
+        
+    def finalize_purchase(self):
+        if self.status != "PENDING":
+            raise RuntimeError("A compra já foi processada")
+        
+        
+        self._validate_stock()
+        self.calculate_total()
+        self._validate_credit_limit()
+        
+    #como a compra ja foi atualizada; o estoque atualiza:
+        self._product.remove_pallets(self._quantity_pallets)
+        
+        #o cliente faz a compra
+        self._client.buy(
+            self._product,
+            self._quantity_pallets,
+            self._product.current_price()
+        )
+        #o seller registra a vensa:
+        self._seller.make_sale(
+            self._client,
+            self._product,
+            self._quantity_pallets
+        )
+        
+        
+        self._seller.add_pallets_sold(self._quantity_pallets)
+        
+        self._status = "COMPLETED"
+        self.register_log("Compra feita com sucesso!")
+        
+        return self.total_value
+    
+    def cancel_purchase(self):
+        if self.status == "COMPLETED":
+            raise RuntimeError("Compra não finalizada.")
+        
+        self.status = "CANCELED"
+        self.register_log("Compra Cancelada")
+        
+    def issue_invoice(self):
+        if self.status != "COMPLETED":
+         raise RuntimeError("Compra não finalizada")
+
+        invoice = {
+        "cliente": self._client.name,
+        "produto": self._product.name,
+        "quantidade_pallets": self._quantity_pallets,
+        "valor": self._total_value,
+        "pagamento": self._payment_method,
+        "data": self._date.strftime("%d/%m/%Y")
+    }
+
+        self.register_log("Nota fiscal emitida")
+        return invoice
+
+    def __str__(self):
+        return (
+            f"Compra do Cliente: {self._client.name}\n"
+            f"Produto: {self._product}\n"
+            f"Quantidade de Pallets: {self._quantity_pallets}\n"
+            f"Status: {self.status}\n"
+            f"Valor: {self._total_value}\n"
+        )
+            [
+#! interface da C. COMPRA
+class InterfacePurchase(ABC):
+    
+    @abstractmethod
+    def calculate_total(self):
+        pass
+    
+    @abstractmethod
+    def finalize_purchase(self):
+        pass
+    
+    @abstractmethod
+    def cancel_purchase(self):
+        pass
+    
+#! abstrata da C. COMPRA
+class AbstractPurchase(InterfacePurchase, ABC):
+    def __init__(self, client, seller, product, quantity_pallets):
+        self._client = client
+        self._seller = seller
+        self._product = product
+        self._quantity_pallets = quantity_pallets
+        self._date = datetime.now()
+        self._status = "PENDING"
+        self._total_value = 0.0
+        
+#! mixin da C. COMPRA
+class MixinPurchase:
+     
+    def register_log(self, message: str):
+        if not hasattr(self, "_logs"):
+            self._logs = []
+            self._logs.append(
+                f"[{datetime.now().strftime('%d/%m/%Y %H:%M')}] {message}"
+            )
+
+#!classe COMPRA
+class Purchase(AbstractPurchase, MixinPurchase):
+    def __init__(self, client, seller, product, quantity_pallets):
+        super().__init__(client, seller, product, quantity_pallets)
+        self._logs = []
+        self._payment_method = None
+        
+    @property
+    def status(self):
+        return self._status
+
+    @property
+    def total_value(self):
+        return self._total_value
+    
+    def _validate_stock(self):
+        avaiLable = self._product.avaible_pallets()
+        if self._quantity_pallets > avaiLable:
+            raise ValueError(
+                f"Estoque Insuficiente"
+                f"Disponivel: {avaiLable} pallets ao todo"
+            )
+            
+    def _validate_credit_limit(self):
+        total = self.calculate_total()
+        if total > self._client.credit_limit():
+            raise PermissionError(
+                "Limite de crédito do cliente excedido!"
+            )  
+            
+    def _apply_promotion(self,price:float ) -> float:
+        if self._product.has_promotion():
+            return self._product.promotion_price()
+        return price
+    
+           
+    def calculate_taxes(self, value: float) -> float:
+        tax_rate = 0.12
+        return value * tax_rate
+    
+    def calculate_total(self):
+        
+        unit_price = self._apply_promotion(
+            self._product.current_price()
+        )
+        gross_value = unit_price * self._quantity_pallets
+        
+        discount_rate = self._client.volume_discount(self._quantity_pallets)
+        discount_value = gross_value * discount_rate
+    
+        subtotal = gross_value - discount_value
+        taxes = self.calculate_taxes(subtotal)    
+        final_value = subtotal + taxes
+        
+        self._total_value = final_value
+        
+        self.register_log(
+            f"Valor Bruto Calculado: {gross_value:.2f}"
+            f"Valor com desconto: R$ {discount_rate * 100: .0f}%"
+            f"Impostos: {taxes:.2f}" 
+            f"Valor final: {final_value: .3f}"
+        )
+        return final_value
+    
+
+    def simulate_purchase(self):
+        self._validate_stock()
+        
+        unit_price = self._apply_promotion(
+            self._product.current_price()
+        )
+        gross = unit_price * self._quantity_pallets
+        discount = gross * self._client.volume_discount(self._quantity_pallets)
+        subtotal = gross - discount
+        taxes = self.calculate_taxes(subtotal)
+      
+        return {
+            "valor bruto": gross,
+            "desconto": discount * 100,
+            "valor_final": subtotal + taxes
+        }
+       
+    def reserve_pallets(self):
+        self._validate_stock()
+        self._product.reserve_pallets(self._quantity_pallets)
+        self.register_log("Pallets Reservados")
+        
+    def set_payment_method(self, method: str):
+        allowed = ["PIX", "CREDIT", "DEBIT", "BOLETO"]
+        if method not in allowed:
+            raise ValueError("Método de pagamento inválido")
+        
+        self._payment_method = method
+        self.register_log(f"Método de pagamento escolhido pelo cliente: {method}")
+    
+        
+    def finalize_purchase(self):
+        if self.status != "PENDING":
+            raise RuntimeError("A compra já foi processada")
+        
+        
+        self._validate_stock()
+        self.calculate_total()
+        self._validate_credit_limit()
+        
+    #como a compra ja foi atualizada; o estoque atualiza:
+        self._product.remove_pallets(self._quantity_pallets)
+        
+        #o cliente faz a compra
+        self._client.buy(
+            self._product,
+            self._quantity_pallets,
+            self._product.current_price()
+        )
+        #o seller registra a vensa:
+        self._seller.make_sale(
+            self._client,
+            self._product,
+            self._quantity_pallets
+        )
+        
+        
+        self._seller.add_pallets_sold(self._quantity_pallets)
+        
+        self._status = "COMPLETED"
+        self.register_log("Compra feita com sucesso!")
+        
+        return self.total_value
+    
+    def cancel_purchase(self):
+        if self.status == "COMPLETED":
+            raise RuntimeError("Compra não finalizada.")
+        
+        self.status = "CANCELED"
+        self.register_log("Compra Cancelada")
+        
+    def issue_invoice(self):
+        if self.status != "COMPLETED":
+         raise RuntimeError("Compra não finalizada")
+
+        invoice = {
+        "cliente": self._client.name,
+        "produto": self._product.name,
+        "quantidade_pallets": self._quantity_pallets,
+        "valor": self._total_value,
+        "pagamento": self._payment_method,
+        "data": self._date.strftime("%d/%m/%Y")
+    }
+
+        self.register_log("Nota fiscal emitida")
+        return invoice
+
+    def __str__(self):
+        return (
+            f"Compra do Cliente: {self._client.name}\n"
+            f"Produto: {self._product}\n"
+            f"Quantidade de Pallets: {self._quantity_pallets}\n"
+            f"Status: {self.status}\n"
+            f"Valor: {self._total_value}\n"
+        )
+            
+        
+
+        
+    
+
+        
+    
+    
+    
+    
+    
+        
+        
+        
+    
+    
+    
+        
+
+        
+                
+        
+        
+
+        
+    
+
+        
+    
+    
+    
+    
+    
+        
+        
+        
+    
+    
+    
+        
+
+        
+                
+
     
 
         
