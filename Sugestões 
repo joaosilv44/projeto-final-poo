@@ -1,1 +1,2 @@
-Talvez alguns atributos de classe como funcionário possam ser removidas da primeira implemtação, por exeplo a data de admição , não acho que seja algo necessário no momento.
+Sigam fielmente o diagrama e adiciona lá tudo o que for desenvolver!
+talvez seja conviniente dividir o código em arquivos , por exemplo um arquivo comercial.py com as classes: Vendedor, Cliente e Compra . Logística.py com as classes 

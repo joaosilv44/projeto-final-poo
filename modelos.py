@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Tuple, Optional
@@ -1998,66 +1998,3 @@ class Delivery(DelayControlMixin, AbstractDelivery):
     
     def __str__(self):
         return f"Entrega {self._id_delivey} - Status {self._status}"
-
-    
-
-        
-    
-    
-    
-    
-    
-        
-        
-        
-    
-    
-    
-        
-
-        
-                
-        
-        
-
-        
-    
-
-        
-    
-    
-    
-    
-    
-        
-        
-        
-    
-    
-    
-        
-
-        
-                
-
-    
-
-        
-    
-    
-    
-    
-    
-        
-        
-        
-    
-    
-    
-        
-
-        
-                
-        
-
-
