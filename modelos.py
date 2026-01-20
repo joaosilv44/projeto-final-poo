@@ -826,7 +826,7 @@ class Product(ABC, Promocional):
     def current_price(self) -> float:
         return self._promotion_price if self.has_promotion() else self._unit_price
     
-class Estoque:
+class Stock:
     def __init__(self,status, responsible, capacity):
         self.status = status
         self.responsible = responsible
