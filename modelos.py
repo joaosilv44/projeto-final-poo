@@ -54,7 +54,6 @@ class ClockMixin:
         self.__entry_time = datetime.now()
         return "A entrada foi regiistrada com sucesso!."
     
-    
     def register_exit(self):
         if not self.__entry_time:
             return "A entrada não foi registrada"
@@ -69,9 +68,8 @@ class ClockMixin:
             
         self.__entry_time = None
         return "A Saída foi registrada"
-    
-    
-#! classe abstrata de Client -> serve de base para o desenvolvimento da mesma.
+
+#! classe abstrata de Client
 class AbstractClient(ABC):
     
     @abstractmethod
@@ -139,7 +137,6 @@ class ReviewMixin:
         self.__reviews.append(stars)
         return f"Obrigado, a sua avaliação foi: {stars} estrelas ({descriptions[stars]})"
         
-
 #  DATA DA ATUALIZAÇÃO: 02.01.2026 as 22:30 da noite
 class Client: 
     def __init__(self, name, cnpj, id_client, credit_limit, costumer_preferences, status_client, registration_date, address, phone, client_type, loyalty_points=0):
@@ -156,7 +153,6 @@ class Client:
         self.__loyalty_points = loyalty_points
         self.__purchase_history = []
         self.__reviews = []
-
 
 # método de compra de pallets
     def buy(self, product, quantity_pallets, unit_value_pallet):
@@ -215,8 +211,7 @@ class Client:
         self.__loyalty_points = 0
         
         return f"O cliente arrecadou {points_redeemed} pontos com sucesso!"
-    
-    
+
  #cliente checa se recebe/aplica preco promocional no valor da compra; caso possua desconto ou frete grátis ele é informado automaticamente.
     def check_promotion(self, buy_value):
         
@@ -233,7 +228,6 @@ class Client:
             "Desconto Aplicado": f"{int(discount * 100)}%",
             "Valor Final": value_with_discount
         }
-        
     ##avaliação do servico -->  o cliente que avalia o serviço da distribuidora
     def rate_service(self, stars):
         
@@ -348,14 +342,12 @@ class Employee:
         self.__hours_worked = hours_worked
         self.__entry_time = None
 
-
     def rehister_entry(self):
         if self.__entry_time is not None:
             return "Sua entrada já foi registrada..."
 
         self.__entry_time = datetime.now()
         return "A entrada foi regiistrada com sucesso!."
-    
 
     def register_exit(self):
         if not self.__entry_time:
@@ -371,7 +363,6 @@ class Employee:
             
         self.__entry_time = None
         return "A Saída foi registrada"
-        
          
     def review_stock(self, stock):
 
@@ -409,8 +400,7 @@ class Employee:
         overtime_value = extra_hours * hourly_value * overtime_rate
         return round(overtime_value, 2)
             
-#? deve ter um método do GERENTE p aprovar as ferias:
-
+#? deve ter um método do GERENTE p aprovar as ferias
     def request_vacation(self):
         if self.__status_employee == "Ferias":
             return "O funcionário se encontra em recesso."
@@ -538,8 +528,6 @@ class Seller(Employee):
 #!ver isso ainda
     def see_costumer_credit(self, client):
         if client
-
-
 #! ATUALIZADO DIA 13.01 AS 17:45 DA TARDE.
 
 #* interface --> classe abstrata --> mixin --> classe funcional. 
@@ -709,8 +697,8 @@ class ProductStatus(Enum):
 #! classe abstrata PRIDUTO
 class Product(ABC, Promocional):
     def __init__(self, name, category,unit_measure,brand, wheight_per_unit,pallets_quantity,barcode, total_units,cost_price, quantity, supplier, min_stock,origin,units_per_pallet, min_pallets, unit_price, expiration_date = date , dimensions= tuple[float, float, float], status: ProductStatus = ProductStatus.ACTIVE):
-        self._name = name 
-        self._category = category
+        self._name = str
+        self._category = str
         self._brand = brand
         self._barcode = barcode
         self._supplier = supplier
@@ -790,7 +778,6 @@ class Product(ABC, Promocional):
         return needs
     
     def is_expired(self) -> bool:
-        
         expired = self._expiration_date < date.today()
         print(f"Status de Validade: {'EXPIRADO' if expired else 'VÁLIDO'}")
         return expired
@@ -801,12 +788,10 @@ class Product(ABC, Promocional):
         print("O produto se encontra bloqueado")
         
     def activate(self) -> None:
-        
         self._status = ProductStatus.ACTIVE
         print("O produto se enconta ativo")
         
     def discontinued(self) -> None:
-        
         self._status = ProductStatus.DISCONTINUED
         print("O produto está descontinuado..")
         
@@ -840,8 +825,7 @@ class Product(ABC, Promocional):
         
     def current_price(self) -> float:
         return self._promotion_price if self.has_promotion() else self._unit_price
-        
-
+    
 class Estoque:
     def __init__(self,status, responsible, capacity):
         self.status = status
@@ -888,7 +872,6 @@ class StockItem:
     def total_value(self):
         return self.total_units() * self.product.current_price()
 
-
 class StockInterface(ABC):
     
     @abstractmethod
@@ -910,8 +893,7 @@ class StockInterface(ABC):
     @abstractmethod
     def list_pallets(self):
         pass
-    
-    
+
 class BaseStock(StockInterface):
     def __init__(self, total_capacity: int):
         self._total_capacity = total_capacity
@@ -922,8 +904,7 @@ class MovementMixin:
     def register_movement(self, description: str):
         data = datetime.now().strftime("%d/%m/%Y %H: %M")
         self._movement_history.append(f"[{data}] {description}")
-        
-        
+    
 class Stock(BaseStock, MovementMixin):
     def __init__(self, total_capacity: int, responsible: str, name: str):
         super().__init__(total_capacity)
@@ -995,8 +976,7 @@ class Stock(BaseStock, MovementMixin):
     
     def total_stock_value(self):
         return sum(item.total_value() for item in self._pallet_list)
-        
-        
+    
     #built ins
     def view_status(self):
         return self._status
@@ -1058,7 +1038,6 @@ class MixinPurchase:
             self._logs.append(
                 f"[{datetime.now().strftime('%d/%m/%Y %H:%M')}] {message}"
             )
-
 #!classe COMPRA
 class Purchase(AbstractPurchase, MixinPurchase):
     def __init__(self, client, seller, product, quantity_pallets):
@@ -1094,7 +1073,6 @@ class Purchase(AbstractPurchase, MixinPurchase):
             return self._product.promotion_price()
         return price
     
-           
     def calculate_taxes(self, value: float) -> float:
         tax_rate = 0.12
         return value * tax_rate
@@ -1153,13 +1131,11 @@ class Purchase(AbstractPurchase, MixinPurchase):
         
         self._payment_method = method
         self.register_log(f"Método de pagamento escolhido pelo cliente: {method}")
-    
         
     def finalize_purchase(self):
         if self.status != "PENDING":
             raise RuntimeError("A compra já foi processada")
-        
-        
+    
         self._validate_stock()
         self.calculate_total()
         self._validate_credit_limit()
@@ -1179,7 +1155,6 @@ class Purchase(AbstractPurchase, MixinPurchase):
             self._product,
             self._quantity_pallets
         )
-        
         
         self._seller.add_pallets_sold(self._quantity_pallets)
         
@@ -1218,29 +1193,7 @@ class Purchase(AbstractPurchase, MixinPurchase):
             f"Quantidade de Pallets: {self._quantity_pallets}\n"
             f"Status: {self.status}\n"
             f"Valor: {self._total_value}\n"
-        )
-            
-        
-
-        
-    
-
-        
-    
-    
-    
-    
-    
-        
-        
-        
-    
-    
-    
-        
-
-        
-                
+        )         
         #! interface da C. COMPRA
 class InterfacePurchase(ABC):
     
@@ -1312,7 +1265,6 @@ class Purchase(AbstractPurchase, MixinPurchase):
             return self._product.promotion_price()
         return price
     
-           
     def calculate_taxes(self, value: float) -> float:
         tax_rate = 0.12
         return value * tax_rate
@@ -1376,8 +1328,7 @@ class Purchase(AbstractPurchase, MixinPurchase):
     def finalize_purchase(self):
         if self.status != "PENDING":
             raise RuntimeError("A compra já foi processada")
-        
-        
+    
         self._validate_stock()
         self.calculate_total()
         self._validate_credit_limit()
@@ -1397,7 +1348,6 @@ class Purchase(AbstractPurchase, MixinPurchase):
             self._product,
             self._quantity_pallets
         )
-        
         
         self._seller.add_pallets_sold(self._quantity_pallets)
         
@@ -1508,8 +1458,7 @@ class Purchase(AbstractPurchase, MixinPurchase):
         if self._product.has_promotion():
             return self._product.promotion_price()
         return price
-    
-           
+  
     def calculate_taxes(self, value: float) -> float:
         tax_rate = 0.12
         return value * tax_rate
@@ -1538,7 +1487,6 @@ class Purchase(AbstractPurchase, MixinPurchase):
         )
         return final_value
     
-
     def simulate_purchase(self):
         self._validate_stock()
         
@@ -1568,13 +1516,11 @@ class Purchase(AbstractPurchase, MixinPurchase):
         
         self._payment_method = method
         self.register_log(f"Método de pagamento escolhido pelo cliente: {method}")
-    
         
     def finalize_purchase(self):
         if self.status != "PENDING":
             raise RuntimeError("A compra já foi processada")
-        
-        
+            
         self._validate_stock()
         self.calculate_total()
         self._validate_credit_limit()
@@ -1594,8 +1540,7 @@ class Purchase(AbstractPurchase, MixinPurchase):
             self._product,
             self._quantity_pallets
         )
-        
-        
+    
         self._seller.add_pallets_sold(self._quantity_pallets)
         
         self._status = "COMPLETED"
@@ -1634,10 +1579,426 @@ class Purchase(AbstractPurchase, MixinPurchase):
             f"Status: {self.status}\n"
             f"Valor: {self._total_value}\n"
         )
-            
-        
 
+class DistributorInterface(ABC):
+#! posssui princípio dip + abstração + interface
+    
+    @abstractmethod
+    def register_client(self, client):
+        pass
+    
+    @abstractmethod
+    def register_employee(self, employee):
+        pass
+    
+    @abstractmethod
+    def register_stock(self, stock):
+        pass
+    
+    @abstractmethod
+    def process_purchase(self, purchase):
+        pass
+    
+    @abstractmethod
+    def dispatch_delivery(self, delivery):
+        pass
+    
+class AbstractDistributor(DistributorInterface, ABC):
+    
+    def __init__(self, name: str, cnpj: str):
+        self._name = name 
+        self._cnpj = cnpj
+        self._clients = []
+        self._employees = []
+        self._stocks = []
+        self._purchases = []
+        self._deliveries =  []
+    
+class AuditMixin:
+#! principio SRP 
+    def _log(self, message:  str):
+        if not hasattr(self, "_audit_logs"):
+            self._audit_logs = []
+        self._audi_logs.append(
+               f"[{datetime.now().strftime('%d/%m/%Y %H:%M')}] {message}"
+        )
+
+class ReportMixin:
+#! principio SRP   
+    def total_revenue(self):
+        return sum(product.total_value for product in self._purchases if product.status == "COMPLETED")
+    
+    def active_clients(self):
+        return sum(client for client in self._clients)
+    
+class Distributor(ReportMixin, AuditMixin, AbstractDistributor):
+    
+    def register_client(self, client):
+        self._clients.append(client)
+        self._log(f"Cliente {client.name} registrado com sucesso!")
         
+    def register_employee(self, employee):
+        self._employees.append(employee)
+        self._log(f"Funcionário {employee.name} registrado com sucesso!")
+        
+    def register_stock(self, stock):
+        self._stocks.append(stock)
+        self._log(f"Estoque {stock.__name} registrado com sucesso!")
+        
+    def process_purchase(self, purchase):
+        purchase.finalize_purchase()
+        self._purchases.append(purchase)
+        self._log("Compra registrada com sucesso!")
+        
+    def dispatch_delivery(self, delivery):
+        delivery.start_delivery()
+        self._deliveries.append(delivery)
+        self._log("Entrega despachada com sucesso!")
+        
+#! met privado:
+    def __validate_employee(self, employee):
+        return hasattr(employee, "register_entry")
+    
+    def __validate_client(self, client):
+        return hasattr(client, "buy")
+    
+#! conc. duck
+    def notify(self, entity):
+        entity.receive_notification("Informação do Sistema: O Sistema foi atualizado")
+        
+    #! built - ins
+    
+    def __str__(self):
+          return f"Distribuidora {self._name} | Clientes: {len(self._clients)}"
+        
+#! interface do gerente
+class InterfaceManager(ABC):
+    
+    @abstractmethod
+    def approve_purchase(self, purchase):
+        pass
+    
+    @abstractmethod
+    def approve_discount(self, discount):
+        pass
+    
+    @abstractmethod
+    def request_report(self, distributor):
+        pass
+    
+    @abstractmethod
+    def manage_emplloyee(self, employee, action: str):
+        pass
+    
+#! claasse resumo do gerente  
+class AbstractManager(InterfaceManager, ABC):
+    
+    def __init__(self, name, registration):
+        self._name = name 
+        self._registration = registration
+
+#! mixin de gerente
+class AuthorizationMixin:
+    
+    def _authorize(self, reason: str):
+        print(f"[AUTORIZADO] {reason}")
+    
+class Manager(AuthorizationMixin, AbstractManager):
+   
+    def approve_purchase(self, purchase):
+       if purchase.total_value > 50000:
+           self._authorize("INFORMAÇÃO DO SISTEMA: Compra de Alto Valor")
+           purchase.mark_as_approved()
+       else:
+           purchase.mark_as_approved()
+      
+    def approve_discount(self, client, percentage):
+        if percentage <= 15:
+            self._authorize("INFORMAÇÃO DO SISTEMA: Desconto padrão aprovado")
+            client.apply_discount(percentage)
+        else: 
+            raise PermissionError("INFORMAÇÃO DO SISTEMA: Desconto acima do limite permitido")
+    
+    def request_report(self, distributor):
+        return {
+            "faturamento": distributor.total_revenue(),
+            "clientes_ativos": len(distributor.active_clients())
+        }
+        
+    def manage_emplloyee(self, employee, action: str):
+        if action  == "PROMOTE":
+            employee.promote()
+        
+        elif action == "DIMISS":
+            employee.dimiss()
+            
+#! classe resumo de Motorista:    
+class AbstractDriver(ABC):
+    
+    @abstractmethod
+    def can_operate(self) -> bool:
+
+    @abstractmethod
+    def assign_delivery(self, delivery):
+        pass
+    
+    @abstractmethod
+    def complete_delivery(self, delivery):
+        pass
+    
+#! MIIXIN de Motorista: 
+class AvailabilityMixin:
+    def is_available(self)-> bool:
+        return self.__status == "ATIVO" and self.can_operate()
+ 
+class Driver(AvailabilityMixin, DistributorInterface):
+    
+    MAX_OCCURRANCES = 5
+    DAILY_LIMIT = 10
+
+    def __init__(self, id_driver, name, cpf, cnh_category, cnh_expiration,
+                 max_capacity_pallets, region):
+        
+        self.__id_driver = id_driver
+        self.__name = name 
+        self.__cpf = cpf
+        self.__cnh_category =  cnh_category
+        self.__cnh_expiration = cnh_expiration
+        self.__status  = "ATIVO"
+        
+        self.__max_capacity_pallets =  max_capacity_pallets
+        self.__region = region
+        
+        self.__deliveries_assigned = []
+        self.__routes_history = []
+        self.__infractions = []
+        self.__occurances = []
+        self.__score -= 10
+        
+    @property
+    def name(self):
+        return self.__name 
+    
+    @property
+    def status(self):
+        return self.__status
+    
+    def cnh_is_valid(self) -> bool:
+        return self.__cnh_expiration >= date.today()
+    
+    def can_operate(self) ->  bool:
+        return (
+            self.__status == "ATIVO"
+            and self.cnh_is_valid()
+            and len(self.__occurances) < self.MAX_OCCURRANCES
+        )
+        
+    def assign_delivery(self, delivery):
+        if not self.can_operate():
+            raise PermissionError("O motorista não pode operar")
+        self.__deliveries_assigned.append(delivery)
+          
+    def accept_delivery(self, delivery):
+        delivery.start()
+        
+    def reject_delivery(self, delivery):
+            self.register_occurance("A entrega foi recusada")
+
+    def complete_delivery(self, delivery):
+        delivery.complete()
+        self.__routes_history.append(delivery)
+        
+    def register_occurance(self, description):
+        self.__occurances.append(description)
+        self.__update_score()
+    
+    def _update_score(self):
+        self.__score -= 10
+        if self.__score <= 50:
+            self._block_driver()
+    
+    def _block_driver(self):
+        self.__status = "BLOQUEADO"
+    
+    def __len__(self):
+        return len(self.__deliveries_assigned)
+    
+    def __str__(self):
+        return f"Motorista: {self.__name}, Status: {self.__status}"
+    
+    def assign_delivery(self, delivery):
+        self._deliveries.append(delivery)
+ 
+ 
+class DeliveryInterface(ABC):
+    
+    @abstractmethod
+    def start_delivery(self):
+        pass
+    
+    @abstractmethod
+    def finish_delivery(self):
+        pass
+    
+    @abstractmethod
+    def cancel_delivery(self, reason: str):
+        pass
+    
+    @abstractmethod
+    def status(self) -> str:
+        pass
+
+class AbstractDelivery(DeliveryInterface, ABC):
+    
+    def __init__(self, id_delivery):
+        self._id_delivery = id_delivery
+        self._created_at = datetime.now()
+        self._started_at = None
+        self._finished_at = None
+        self._status = "PENDING"
+        self._occurrences = []
+        
+    def status(self)->str:
+        return self._status
+    
+    def _register_occurance(self, description: str):
+        self._occurrences.append({
+            "description": description,
+            "date": datetime.now()
+        })
+    
+    def get_occurrances(self):
+        return self._occurrances  
+    
+    @abstractmethod
+    def calculate_cost(self) -> float:
+        pass
+    
+    @abstractmethod
+    def notify_costumer(self, message: str):
+        pass
+
+class DelayControlMixin:
+    
+    def is_delayed(self) -> bool:
+        if not  self._finished_at:
+            return False
+        if not hasattr(self, "_estimated_time"):
+            return False
+        return datetime.now() > self._estimated_time
+  
+class Delivery(DelayControlMixin, AbstractDelivery):
+    
+    STATUS_PENDING = "PENDING"
+    STATUS_ASSIGNED = "ASSIGNED"
+    STATUS_IN_TRANSIT = "IN_TRANSIT"
+    STATUS_DELIVERED = "DELIVERED"
+    STATUS_DELAYED = "DELAYED"
+    STATUS_CANCELED = "CANCELED"
+    
+    BASE_PRICE = 20.0
+    PRICE_PER_KM = 2.5
+    EXPRESS_FEE = 30.0
+    DELAY_PENALTY = 15.0
+    
+    def __init__(self, id_delivery, estimated_hours, distance_km ,express=False):
+        super().__init__(id_delivery)
+        self._estimated_time = datetime.now() + timedelta(hours= estimated_hours)
+        self._receiver_name = None
+        self._proof = None
+        self._driver = None
+        self._distance_km = distance_km
+        self._express = express
+        self._timeline = []
+        
+        self._register_event("Entrega Criada")
+           
+    def assign_driver(self, driver):
+        if self._status != self.STATUS_PENDING:
+            raise ValueError("O motorista só pode ser solcitado quando existir entregas pendentes..")
+        self._driver = driver 
+        self._status = self.STATUS_ASSIGNED
+        self.register_event("Motorista Atribuido")
+        
+    def calculate_cost(self):
+        cost = self.BASE_PRICE
+        cost += self._distance_km * self.PRICE_PER_KM
+        
+        if self._express:
+            cost += self.EXPRESS_FEE
+        
+        if self.is_delayed():
+            cost += self.DELAY_PENALTY
+            
+        return round(cost, 2)
+        
+    def can_start(self) -> bool:
+        return self._status == self.STATUS_ASSIGNED and self._driver is not None
+
+    def can_finish(self) -> bool:
+        return self._status == self.STATUS_IN_TRANSIT
+    
+    def can_cancel(self) -> bool:
+        return self._status not in (self.STATUS_DELIVERED, self.STATUS_CANCELED)
+    
+    def is_active(self) -> bool:
+        return self._status in (
+            self.STATUS_ASSIGNED,
+            self.STATUS_IN_TRANSIT,
+            self.STATUS_DELAYED
+        )
+        
+    def _register_occurance(self, description: str):
+        self._occurances.append({
+            "description": description,
+            "date": datetime.now()
+        })
+        
+    def _register_event(self, description: str):
+        self._timeline.append({
+            "event": description,
+            "date": datetime.now()
+        })
+        
+    def get_timeline(self):
+        return self._timeline
+    
+    def start_delivery(self):
+      if not self.can_start():
+          raise PermissionError("A entrega não pode ser inciada")
+      
+      self._status = self.STATUS_IN_TRANSIT
+      self._started_at = datetime.now()
+      self._register_event("Entrega Iniciada")
+      self.notify_costumer("Sua encomenda saiu para a entrega")
+      
+    def finish_delivery(self):
+      if not self.can_finish():
+          raise PermissionError("Mensagem do Sistema: A entrega não pode ser finalizada!")
+      
+      self._status = self.STATUS_DELIVERED
+      self._finished_at = datetime.now()
+      self._register_event("Entrega Finalizada")
+      self.notify_costumer("Entrega Realizada com sucesso!")
+      
+    def cancel_delivery(self, reason: str):
+        if not self.can_cancel():
+            raise PermissionError("A sua entrega não pode ser cancelada")
+
+        self._status = self.STATUS_CANCELED
+        self._register_occurance(reason)
+        self._register_event("A sua entrega foi cancelada")
+        self.notify_costumer(f"Entrega cancelada: {reason}")
+        
+    def notify_costumer(self, message: str):
+        print(f"[CLIENTE] Entrega {self._id_delivey}: {message}")
+        
+    def __len__(self):
+        return len(self._occurances)
+    
+    def __str__(self):
+        return f"Entrega {self._id_delivey} - Status {self._status}"
+
     
 
         
